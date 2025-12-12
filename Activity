@@ -1,0 +1,93 @@
+using System;
+using System.Collections.Generic;
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        // --- Service List ---
+        Dictionary<int, (string Name, double Charge)> services = new Dictionary<int, (string, double)>
+        {
+            {1, ("Lab Test", 500)},
+            {2, ("X-Ray", 1000)},
+            {3, ("ECG", 800)},
+            {4, ("MRI", 5000)}
+        };
+
+        // --- Base Fee ---
+        Console.Write("Enter Base Consultation Fee: ");
+        double baseFee = double.Parse(Console.ReadLine());
+
+        // --- Show Services ---
+        Console.WriteLine("\nAvailable Optional Services:");
+        foreach (var s in services)
+        {
+            Console.WriteLine($"{s.Key}. {s.Value.Name} (₹{s.Value.Charge})");
+        }
+
+        // --- Number of services taken ---
+        Console.Write("\nHow many optional services taken: ");
+        int count = int.Parse(Console.ReadLine());
+
+        List<double> charges = new List<double>();
+
+        // --- Loop to take selected services ---
+        for (int i = 1; i <= count; i++)
+        {
+            Console.Write("Enter service number: ");
+            int choice = int.Parse(Console.ReadLine());
+
+            if (services.ContainsKey(choice))
+            {
+                double charge = services[choice].Charge;
+                charges.Add(charge);
+
+                Console.WriteLine($"✔ Added {services[choice].Name} - ₹{charge}");
+            }
+            else
+            {
+                Console.WriteLine("Invalid service number! Try again.");
+                i--;  // repeat same entry
+            }
+        }
+
+        // --- Calculate Optional Service Total ---
+        double optionalTotal = 0;
+        foreach (double c in charges)
+        {
+            optionalTotal += c;
+        }
+
+        // --- Total Before Discount ---
+        double total = baseFee + optionalTotal;
+
+        // --- Discount Condition ---
+        double discount = 0;
+
+        if (total > 2000)
+        {
+            discount = total * 0.05; // 5%
+        }
+
+        double afterDiscount = total - discount;
+
+        // --- Insurance ---
+        Console.Write("\nEnter Insurance Percentage (0, 20, 50): ");
+        double insurancePercent = double.Parse(Console.ReadLine());
+
+        double insuranceDeduction = afterDiscount * (insurancePercent / 100);
+
+        // --- Final Payable Amount ---
+        double finalAmount = afterDiscount - insuranceDeduction;
+
+        // --- Output ---
+        Console.WriteLine("\n--------- FINAL BILL ---------");
+        Console.WriteLine($"Base Consultation Fee: ₹{baseFee}");
+        Console.WriteLine($"Optional Services Total: ₹{optionalTotal}");
+        Console.WriteLine($"Discount Applied: ₹{discount}");
+        Console.WriteLine($"Amount After Discount: ₹{afterDiscount}");
+        Console.WriteLine($"Insurance Deduction: ₹{insuranceDeduction}");
+        Console.WriteLine($"Final Amount Patient Pays: ₹{finalAmount}");
+        Console.WriteLine("--------------------------------");
+    }
+}

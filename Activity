@@ -3,9 +3,41 @@ using System.Collections.Generic;
 
 class Program
 {
+    // Patient class to store patient details
+    class Patient
+    {
+        public string Name { get; set; }
+        public int Age { get; set; }
+        public string Gender { get; set; }
+        public string Address { get; set; }
+
+        public Patient(string name, int age, string gender, string address)
+        {
+            Name = name;
+            Age = age;
+            Gender = gender;
+            Address = address;
+        }
+    }
+
+    // PaymentHistory class to store payment details for each patient
+    class PaymentHistory
+    {
+        public DateTime PaymentDate { get; set; }
+        public double AmountPaid { get; set; }
+        public string PaymentMethod { get; set; }
+
+        public PaymentHistory(DateTime paymentDate, double amountPaid, string paymentMethod)
+        {
+            PaymentDate = paymentDate;
+            AmountPaid = amountPaid;
+            PaymentMethod = paymentMethod;
+        }
+    }
+
     static void Main(string[] args)
     {
-        // --- Service List ---
+        // Dictionary for services offered by the hospital
         Dictionary<int, (string Name, double Charge)> services = new Dictionary<int, (string, double)>
         {
             {1, ("Lab Test", 500)},
@@ -14,25 +46,39 @@ class Program
             {4, ("MRI", 5000)}
         };
 
-        // --- Base Fee ---
+        // --- Patient Registration ---
+        Console.WriteLine("Enter Patient Details:");
+        Console.Write("Name: ");
+        string patientName = Console.ReadLine();
+        Console.Write("Age: ");
+        int age = int.Parse(Console.ReadLine());
+        Console.Write("Gender: ");
+        string gender = Console.ReadLine();
+        Console.Write("Address: ");
+        string address = Console.ReadLine();
+
+        // Create a patient record
+        Patient patient = new Patient(patientName, age, gender, address);
+
+        // --- Base Consultation Fee ---
         Console.Write("Enter Base Consultation Fee: ");
         double baseFee = double.Parse(Console.ReadLine());
 
-        // --- Show Services ---
+        // --- Show Available Services ---
         Console.WriteLine("\nAvailable Optional Services:");
         foreach (var s in services)
         {
             Console.WriteLine($"{s.Key}. {s.Value.Name} (₹{s.Value.Charge})");
         }
 
-        // --- Number of services taken ---
-        Console.Write("\nHow many optional services taken: ");
-        int count = int.Parse(Console.ReadLine());
+        // --- Number of services selected ---
+        Console.Write("\nHow many optional services were taken? ");
+        int serviceCount = int.Parse(Console.ReadLine());
 
         List<double> charges = new List<double>();
 
-        // --- Loop to take selected services ---
-        for (int i = 1; i <= count; i++)
+        // --- Loop to select services ---
+        for (int i = 1; i <= serviceCount; i++)
         {
             Console.Write("Enter service number: ");
             int choice = int.Parse(Console.ReadLine());
@@ -41,7 +87,6 @@ class Program
             {
                 double charge = services[choice].Charge;
                 charges.Add(charge);
-
                 Console.WriteLine($"✔ Added {services[choice].Name} - ₹{charge}");
             }
             else
@@ -51,22 +96,21 @@ class Program
             }
         }
 
-        // --- Calculate Optional Service Total ---
+        // --- Calculate Total Service Charges ---
         double optionalTotal = 0;
-        foreach (double c in charges)
+        foreach (double charge in charges)
         {
-            optionalTotal += c;
+            optionalTotal += charge;
         }
 
         // --- Total Before Discount ---
         double total = baseFee + optionalTotal;
 
-        // --- Discount Condition ---
+        // --- Discount ---
         double discount = 0;
-
         if (total > 2000)
         {
-            discount = total * 0.05; // 5%
+            discount = total * 0.05;  // 5% discount
         }
 
         double afterDiscount = total - discount;
@@ -74,20 +118,81 @@ class Program
         // --- Insurance ---
         Console.Write("\nEnter Insurance Percentage (0, 20, 50): ");
         double insurancePercent = double.Parse(Console.ReadLine());
-
         double insuranceDeduction = afterDiscount * (insurancePercent / 100);
 
-        // --- Final Payable Amount ---
-        double finalAmount = afterDiscount - insuranceDeduction;
+        // --- Stay Charges ---
+        Console.Write("\nEnter Number of Days Stayed in the Hospital: ");
+        int daysStayed = int.Parse(Console.ReadLine());
 
-        // --- Output ---
+        double dailyStayCharge = 1000;
+        double stayCharge = daysStayed * dailyStayCharge;
+
+        double totalWithStay = afterDiscount + stayCharge;
+
+        // --- Tax Calculation ---
+        Console.Write("\nEnter Tax Percentage: ");
+        double taxPercent = double.Parse(Console.ReadLine());
+        double taxAmount = totalWithStay * (taxPercent / 100);
+        double totalWithTax = totalWithStay + taxAmount;
+
+        // --- Final Amount ---
+        double finalAmount = totalWithTax - insuranceDeduction;
+
+        // --- Payment Method ---
+        Console.WriteLine("\nSelect Payment Method:");
+        Console.WriteLine("1. Cash");
+        Console.WriteLine("2. Credit/Debit Card");
+        Console.WriteLine("3. Insurance");
+        int paymentChoice = int.Parse(Console.ReadLine());
+
+        string paymentMethod = string.Empty;
+        double amountPaid = 0;
+
+        switch (paymentChoice)
+        {
+            case 1:
+                paymentMethod = "Cash";
+                Console.Write("Enter cash paid: ₹");
+                amountPaid = double.Parse(Console.ReadLine());
+                break;
+            case 2:
+                paymentMethod = "Card";
+                Console.Write("Enter card number: ");
+                string cardNumber = Console.ReadLine();
+                break;
+            case 3:
+                paymentMethod = "Insurance";
+                amountPaid = finalAmount;  // Assuming insurance covers the full amount
+                break;
+        }
+
+        // --- Store Payment History ---
+        PaymentHistory paymentHistory = new PaymentHistory(DateTime.Now, amountPaid, paymentMethod);
+
+        // --- Generate Bill ID ---
+        string billId = GenerateBillId(patient.Name);
+
+        // --- Output the Bill ---
         Console.WriteLine("\n--------- FINAL BILL ---------");
-        Console.WriteLine($"Base Consultation Fee: ₹{baseFee}");
+        Console.WriteLine($"Bill ID: {billId}");
+        Console.WriteLine($"Patient Name: {patient.Name}");
+        Console.WriteLine($"Consultation Fee: ₹{baseFee}");
         Console.WriteLine($"Optional Services Total: ₹{optionalTotal}");
         Console.WriteLine($"Discount Applied: ₹{discount}");
         Console.WriteLine($"Amount After Discount: ₹{afterDiscount}");
         Console.WriteLine($"Insurance Deduction: ₹{insuranceDeduction}");
+        Console.WriteLine($"Stay Charges: ₹{stayCharge}");
+        Console.WriteLine($"Total After Stay Charges: ₹{totalWithStay}");
+        Console.WriteLine($"Tax Applied: ₹{taxAmount}");
+        Console.WriteLine($"Total After Tax: ₹{totalWithTax}");
         Console.WriteLine($"Final Amount Patient Pays: ₹{finalAmount}");
+        Console.WriteLine($"Payment Method: {paymentMethod}");
         Console.WriteLine("--------------------------------");
+    }
+
+    // Method to generate a unique Bill ID
+    static string GenerateBillId(string patientName)
+    {
+        return $"BILL-{patientName.Substring(0, 3).ToUpper()}-{DateTime.Now.ToString("yyyyMMddHHmmss")}";
     }
 }

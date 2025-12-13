@@ -3,196 +3,147 @@ using System.Collections.Generic;
 
 class Program
 {
-    // Patient class to store patient details
-    class Patient
+    enum InsuranceType
     {
-        public string Name { get; set; }
-        public int Age { get; set; }
-        public string Gender { get; set; }
-        public string Address { get; set; }
-
-        public Patient(string name, int age, string gender, string address)
-        {
-            Name = name;
-            Age = age;
-            Gender = gender;
-            Address = address;
-        }
+        None = 0,
+        Basic = 20,
+        Premium = 50,
+        Corporate = 80
     }
 
-    // PaymentHistory class to store payment details for each patient
-    class PaymentHistory
+    enum AgeCategory
     {
-        public DateTime PaymentDate { get; set; }
-        public double AmountPaid { get; set; }
-        public string PaymentMethod { get; set; }
-
-        public PaymentHistory(DateTime paymentDate, double amountPaid, string paymentMethod)
-        {
-            PaymentDate = paymentDate;
-            AmountPaid = amountPaid;
-            PaymentMethod = paymentMethod;
-        }
+        Child,
+        Adult,
+        Senior,
+        SuperSenior
     }
 
-    static void Main(string[] args)
+    static void Main()
     {
-        // Dictionary for services offered by the hospital
-        Dictionary<int, (string Name, double Charge)> services = new Dictionary<int, (string, double)>
+        // Services
+        Dictionary<int, double> services = new Dictionary<int, double>
         {
-            {1, ("Lab Test", 500)},
-            {2, ("X-Ray", 1000)},
-            {3, ("ECG", 800)},
-            {4, ("MRI", 5000)}
+            {1, 500},   // Lab Test
+            {2, 1000},  // X-Ray
+            {3, 800},   // ECG
+            {4, 5000}   // MRI
         };
 
-        // --- Patient Registration ---
-        Console.WriteLine("Enter Patient Details:");
-        Console.Write("Name: ");
-        string patientName = Console.ReadLine();
-        Console.Write("Age: ");
+        Console.WriteLine("=== Hospital Billing System ===");
+
+        // Age input
+        Console.Write("Enter Age: ");
         int age = int.Parse(Console.ReadLine());
-        Console.Write("Gender: ");
-        string gender = Console.ReadLine();
-        Console.Write("Address: ");
-        string address = Console.ReadLine();
 
-        // Create a patient record
-        Patient patient = new Patient(patientName, age, gender, address);
+        AgeCategory ageCategory = GetAgeCategory(age);
 
-        // --- Base Consultation Fee ---
-        Console.Write("Enter Base Consultation Fee: ");
-        double baseFee = double.Parse(Console.ReadLine());
+        // Consultation fee
+        Console.Write("Enter Consultation Fee: ");
+        double consultationFee = double.Parse(Console.ReadLine());
 
-        // --- Show Available Services ---
-        Console.WriteLine("\nAvailable Optional Services:");
-        foreach (var s in services)
-        {
-            Console.WriteLine($"{s.Key}. {s.Value.Name} (₹{s.Value.Charge})");
-        }
+        Console.WriteLine("\nAvailable Services:");
+        Console.WriteLine("1. Lab Test - ₹500");
+        Console.WriteLine("2. X-Ray - ₹1000");
+        Console.WriteLine("3. ECG - ₹800");
+        Console.WriteLine("4. MRI - ₹5000");
 
-        // --- Number of services selected ---
-        Console.Write("\nHow many optional services were taken? ");
+        Console.Write("\nHow many services taken? ");
         int serviceCount = int.Parse(Console.ReadLine());
 
-        List<double> charges = new List<double>();
+        double serviceTotal = 0;
 
-        // --- Loop to select services ---
-        for (int i = 1; i <= serviceCount; i++)
+        for (int i = 0; i < serviceCount; i++)
         {
             Console.Write("Enter service number: ");
             int choice = int.Parse(Console.ReadLine());
 
             if (services.ContainsKey(choice))
             {
-                double charge = services[choice].Charge;
-                charges.Add(charge);
-                Console.WriteLine($"✔ Added {services[choice].Name} - ₹{charge}");
+                serviceTotal += services[choice];
             }
             else
             {
-                Console.WriteLine("Invalid service number! Try again.");
-                i--;  // repeat same entry
+                Console.WriteLine("Invalid service!");
+                i--;
             }
         }
 
-        // --- Calculate Total Service Charges ---
-        double optionalTotal = 0;
-        foreach (double charge in charges)
-        {
-            optionalTotal += charge;
-        }
+        double subTotal = consultationFee + serviceTotal;
 
-        // --- Total Before Discount ---
-        double total = baseFee + optionalTotal;
+        // Base discount
+        double baseDiscount = subTotal > 2000 ? subTotal * 0.05 : 0;
+        double afterBaseDiscount = subTotal - baseDiscount;
 
-        // --- Discount ---
-        double discount = 0;
-        if (total > 2000)
-        {
-            discount = total * 0.05;  // 5% discount
-        }
+        // Insurance
+        Console.WriteLine("\nInsurance Type:");
+        Console.WriteLine("0. None");
+        Console.WriteLine("1. Basic");
+        Console.WriteLine("2. Premium");
+        Console.WriteLine("3. Corporate");
+        int insuranceInput = int.Parse(Console.ReadLine());
 
-        double afterDiscount = total - discount;
+        InsuranceType insurance = (InsuranceType)insuranceInput;
+        double insuranceDiscount = afterBaseDiscount * ((int)insurance / 100.0);
 
-        // --- Insurance ---
-        Console.Write("\nEnter Insurance Percentage (0, 20, 50): ");
-        double insurancePercent = double.Parse(Console.ReadLine());
-        double insuranceDeduction = afterDiscount * (insurancePercent / 100);
+        // Age based discount
+        double ageDiscount = CalculateAgeDiscount(afterBaseDiscount, ageCategory);
 
-        // --- Stay Charges ---
-        Console.Write("\nEnter Number of Days Stayed in the Hospital: ");
-        int daysStayed = int.Parse(Console.ReadLine());
+        // Stay charges
+        Console.Write("\nEnter Hospital Stay Days: ");
+        int days = int.Parse(Console.ReadLine());
+        double stayCharges = days * 1000;
 
-        double dailyStayCharge = 1000;
-        double stayCharge = daysStayed * dailyStayCharge;
+        // Tax
+        double tax = (afterBaseDiscount + stayCharges) * 0.12;
 
-        double totalWithStay = afterDiscount + stayCharge;
+        double finalAmount =
+            afterBaseDiscount + stayCharges + tax
+            - insuranceDiscount - ageDiscount;
 
-        // --- Tax Calculation ---
-        Console.Write("\nEnter Tax Percentage: ");
-        double taxPercent = double.Parse(Console.ReadLine());
-        double taxAmount = totalWithStay * (taxPercent / 100);
-        double totalWithTax = totalWithStay + taxAmount;
+        string billId = GenerateBillId();
 
-        // --- Final Amount ---
-        double finalAmount = totalWithTax - insuranceDeduction;
-
-        // --- Payment Method ---
-        Console.WriteLine("\nSelect Payment Method:");
-        Console.WriteLine("1. Cash");
-        Console.WriteLine("2. Credit/Debit Card");
-        Console.WriteLine("3. Insurance");
-        int paymentChoice = int.Parse(Console.ReadLine());
-
-        string paymentMethod = string.Empty;
-        double amountPaid = 0;
-
-        switch (paymentChoice)
-        {
-            case 1:
-                paymentMethod = "Cash";
-                Console.Write("Enter cash paid: ₹");
-                amountPaid = double.Parse(Console.ReadLine());
-                break;
-            case 2:
-                paymentMethod = "Card";
-                Console.Write("Enter card number: ");
-                string cardNumber = Console.ReadLine();
-                break;
-            case 3:
-                paymentMethod = "Insurance";
-                amountPaid = finalAmount;  // Assuming insurance covers the full amount
-                break;
-        }
-
-        // --- Store Payment History ---
-        PaymentHistory paymentHistory = new PaymentHistory(DateTime.Now, amountPaid, paymentMethod);
-
-        // --- Generate Bill ID ---
-        string billId = GenerateBillId(patient.Name);
-
-        // --- Output the Bill ---
-        Console.WriteLine("\n--------- FINAL BILL ---------");
+        // Final Bill
+        Console.WriteLine("\n========= FINAL BILL =========");
         Console.WriteLine($"Bill ID: {billId}");
-        Console.WriteLine($"Patient Name: {patient.Name}");
-        Console.WriteLine($"Consultation Fee: ₹{baseFee}");
-        Console.WriteLine($"Optional Services Total: ₹{optionalTotal}");
-        Console.WriteLine($"Discount Applied: ₹{discount}");
-        Console.WriteLine($"Amount After Discount: ₹{afterDiscount}");
-        Console.WriteLine($"Insurance Deduction: ₹{insuranceDeduction}");
-        Console.WriteLine($"Stay Charges: ₹{stayCharge}");
-        Console.WriteLine($"Total After Stay Charges: ₹{totalWithStay}");
-        Console.WriteLine($"Tax Applied: ₹{taxAmount}");
-        Console.WriteLine($"Total After Tax: ₹{totalWithTax}");
-        Console.WriteLine($"Final Amount Patient Pays: ₹{finalAmount}");
-        Console.WriteLine($"Payment Method: {paymentMethod}");
-        Console.WriteLine("--------------------------------");
+        Console.WriteLine($"Age: {age} ({ageCategory})");
+        Console.WriteLine($"Consultation Fee: ₹{consultationFee}");
+        Console.WriteLine($"Service Charges: ₹{serviceTotal}");
+        Console.WriteLine($"Base Discount: ₹{baseDiscount}");
+        Console.WriteLine($"Insurance Discount: ₹{insuranceDiscount}");
+        Console.WriteLine($"Age Discount: ₹{ageDiscount}");
+        Console.WriteLine($"Stay Charges: ₹{stayCharges}");
+        Console.WriteLine($"Tax: ₹{tax}");
+        Console.WriteLine($"Final Amount to Pay: ₹{finalAmount}");
+        Console.WriteLine("==============================");
     }
 
-    // Method to generate a unique Bill ID
-    static string GenerateBillId(string patientName)
+    // Age category logic (MULTIPLE CASES)
+    static AgeCategory GetAgeCategory(int age)
     {
-        return $"BILL-{patientName.Substring(0, 3).ToUpper()}-{DateTime.Now.ToString("yyyyMMddHHmmss")}";
+        if (age <= 12) return AgeCategory.Child;
+        if (age <= 59) return AgeCategory.Adult;
+        if (age <= 79) return AgeCategory.Senior;
+        return AgeCategory.SuperSenior;
+    }
+
+    static double CalculateAgeDiscount(double amount, AgeCategory category)
+    {
+        switch (category)
+        {
+            case AgeCategory.Child:
+                return amount * 0.15;
+            case AgeCategory.Senior:
+                return amount * 0.10;
+            case AgeCategory.SuperSenior:
+                return amount * 0.20;
+            default:
+                return 0;
+        }
+    }
+
+    static string GenerateBillId()
+    {
+        return "BILL-" + DateTime.Now.ToString("yyyyMMddHHmmss");
     }
 }

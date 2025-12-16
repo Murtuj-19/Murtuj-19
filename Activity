@@ -1,149 +1,167 @@
 using System;
 using System.Collections.Generic;
 
-class Program
+class PatientBilling
 {
-    enum InsuranceType
-    {
-        None = 0,
-        Basic = 20,
-        Premium = 50,
-        Corporate = 80
-    }
-
-    enum AgeCategory
-    {
-        Child,
-        Adult,
-        Senior,
-        SuperSenior
-    }
-
     static void Main()
     {
-        // Services
-        Dictionary<int, double> services = new Dictionary<int, double>
+        Dictionary<int, (string Name, int Cost)> availableServices =
+            new Dictionary<int, (string, int)>()
         {
-            {1, 500},   // Lab Test
-            {2, 1000},  // X-Ray
-            {3, 800},   // ECG
-            {4, 5000}   // MRI
+            { 1, ("Lab Test", 600) },
+            { 2, ("X-Ray", 300) },
+            { 3, ("ECG", 1500) },
+            { 4, ("MRI", 2500) },
+            { 5, ("Ultrasound", 1200) },
+            { 6, ("Blood Work", 400) }
         };
 
-        Console.WriteLine("=== Hospital Billing System ===");
+        int baseConsultationFee = 500;
 
-        // Age input
-        Console.Write("Enter Age: ");
-        int age = int.Parse(Console.ReadLine());
-
-        AgeCategory ageCategory = GetAgeCategory(age);
-
-        // Consultation fee
-        Console.Write("Enter Consultation Fee: ");
-        double consultationFee = double.Parse(Console.ReadLine());
-
-        Console.WriteLine("\nAvailable Services:");
-        Console.WriteLine("1. Lab Test - ₹500");
-        Console.WriteLine("2. X-Ray - ₹1000");
-        Console.WriteLine("3. ECG - ₹800");
-        Console.WriteLine("4. MRI - ₹5000");
-
-        Console.Write("\nHow many services taken? ");
-        int serviceCount = int.Parse(Console.ReadLine());
-
-        double serviceTotal = 0;
-
-        for (int i = 0; i < serviceCount; i++)
+        Console.WriteLine("Available Services:");
+        foreach (var service in availableServices)
         {
-            Console.Write("Enter service number: ");
-            int choice = int.Parse(Console.ReadLine());
+            Console.WriteLine($"{service.Key}. {service.Value.Name} - {service.Value.Cost}");
+        }
 
-            if (services.ContainsKey(choice))
+        Console.WriteLine("\nEnter the numbers of optional services used (comma-separated).");
+        Console.WriteLine("Press Enter if none were used:");
+        string servicesInput = Console.ReadLine();
+
+        List<string> selectedServiceNumbers = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(servicesInput))
+        {
+            selectedServiceNumbers = new List<string>(servicesInput.Split(','));
+        }
+
+        Console.Write("Enter insurance coverage percentage (e.g., 20 for 20%): ");
+        string insuranceInput = Console.ReadLine();
+
+        double insurancePercent = 0;
+        if (!double.TryParse(insuranceInput, out insurancePercent) ||
+            insurancePercent < 0 || insurancePercent > 100)
+        {
+            Console.WriteLine("Invalid input. Setting insurance coverage to 0%.");
+            insurancePercent = 0;
+        }
+
+        Console.WriteLine("\nWhat does the insurance cover?");
+        Console.WriteLine("1. Full Amount");
+        Console.WriteLine("2. Optional Services (Tests/Scans) Only");
+        Console.WriteLine("3. Admit Fee Only");
+        Console.WriteLine("4. Consultation Fee Only");
+        Console.Write("Enter your choice: ");
+        string insuranceChoiceInput = Console.ReadLine();
+
+        int insuranceChoice = 1;
+        int.TryParse(insuranceChoiceInput, out insuranceChoice);
+
+        const int admitFeePerDay = 2000;
+
+        Console.Write("Enter number of admit days (0 if not admitted): ");
+        string admitInput = Console.ReadLine();
+
+        int admitDays = 0;
+        if (!int.TryParse(admitInput, out admitDays) || admitDays < 0)
+        {
+            Console.WriteLine("Invalid input. Setting admit days to 0.");
+            admitDays = 0;
+        }
+
+        int optionalServicesAmount = 0;
+        int totalAmount = baseConsultationFee;
+        int discountAmount = 0;
+        int insuranceAmount = 0;
+        int finalAmount = 0;
+
+        int admitAmount = admitDays * admitFeePerDay;
+
+        foreach (string number in selectedServiceNumbers)
+        {
+            if (int.TryParse(number.Trim(), out int serviceNumber) &&
+                availableServices.ContainsKey(serviceNumber))
             {
-                serviceTotal += services[choice];
+                optionalServicesAmount += availableServices[serviceNumber].Cost;
             }
             else
             {
-                Console.WriteLine("Invalid service!");
-                i--;
+                Console.WriteLine($"Service number '{number.Trim()}' not recognized. Skipping.");
             }
         }
 
-        double subTotal = consultationFee + serviceTotal;
+        totalAmount += optionalServicesAmount + admitAmount;
 
-        // Base discount
-        double baseDiscount = subTotal > 2000 ? subTotal * 0.05 : 0;
-        double afterBaseDiscount = subTotal - baseDiscount;
-
-        // Insurance
-        Console.WriteLine("\nInsurance Type:");
-        Console.WriteLine("0. None");
-        Console.WriteLine("1. Basic");
-        Console.WriteLine("2. Premium");
-        Console.WriteLine("3. Corporate");
-        int insuranceInput = int.Parse(Console.ReadLine());
-
-        InsuranceType insurance = (InsuranceType)insuranceInput;
-        double insuranceDiscount = afterBaseDiscount * ((int)insurance / 100.0);
-
-        // Age based discount
-        double ageDiscount = CalculateAgeDiscount(afterBaseDiscount, ageCategory);
-
-        // Stay charges
-        Console.Write("\nEnter Hospital Stay Days: ");
-        int days = int.Parse(Console.ReadLine());
-        double stayCharges = days * 1000;
-
-        // Tax
-        double tax = (afterBaseDiscount + stayCharges) * 0.12;
-
-        double finalAmount =
-            afterBaseDiscount + stayCharges + tax
-            - insuranceDiscount - ageDiscount;
-
-        string billId = GenerateBillId();
-
-        // Final Bill
-        Console.WriteLine("\n========= FINAL BILL =========");
-        Console.WriteLine($"Bill ID: {billId}");
-        Console.WriteLine($"Age: {age} ({ageCategory})");
-        Console.WriteLine($"Consultation Fee: ₹{consultationFee}");
-        Console.WriteLine($"Service Charges: ₹{serviceTotal}");
-        Console.WriteLine($"Base Discount: ₹{baseDiscount}");
-        Console.WriteLine($"Insurance Discount: ₹{insuranceDiscount}");
-        Console.WriteLine($"Age Discount: ₹{ageDiscount}");
-        Console.WriteLine($"Stay Charges: ₹{stayCharges}");
-        Console.WriteLine($"Tax: ₹{tax}");
-        Console.WriteLine($"Final Amount to Pay: ₹{finalAmount}");
-        Console.WriteLine("==============================");
-    }
-
-    // Age category logic (MULTIPLE CASES)
-    static AgeCategory GetAgeCategory(int age)
-    {
-        if (age <= 12) return AgeCategory.Child;
-        if (age <= 59) return AgeCategory.Adult;
-        if (age <= 79) return AgeCategory.Senior;
-        return AgeCategory.SuperSenior;
-    }
-
-    static double CalculateAgeDiscount(double amount, AgeCategory category)
-    {
-        switch (category)
+        if (totalAmount > 2000)
         {
-            case AgeCategory.Child:
-                return amount * 0.15;
-            case AgeCategory.Senior:
-                return amount * 0.10;
-            case AgeCategory.SuperSenior:
-                return amount * 0.20;
-            default:
-                return 0;
+            discountAmount = (int)(totalAmount * 0.05);
         }
-    }
 
-    static string GenerateBillId()
-    {
-        return "BILL-" + DateTime.Now.ToString("yyyyMMddHHmmss");
+        int discountedAmount = totalAmount - discountAmount;
+
+        // ✅ Senior citizen discount
+        Console.Write("Is Patient a senior citizen (aged 60 or above)? (y/n): ");
+        string seniorInput = Console.ReadLine()?.Trim().ToLower();
+
+        int seniorDiscount = 0;
+
+        if (seniorInput == "y")
+        {
+            seniorDiscount = (int)(discountedAmount * 0.10);
+            Console.WriteLine("Senior citizen discount of 10% applied.");
+        }
+
+        int afterSenior = discountedAmount - seniorDiscount;
+
+        // ✅ Track what insurance applies to
+        string insuranceAppliedOn = "";
+
+        // ✅ Apply insurance
+        switch (insuranceChoice)
+        {
+            case 1:
+                insuranceAmount = (int)(afterSenior * (insurancePercent / 100.0));
+                insuranceAppliedOn = "Total Amount";
+                break;
+
+            case 2:
+                insuranceAmount = (int)(optionalServicesAmount * (insurancePercent / 100.0));
+                insuranceAppliedOn = "Optional Services";
+                break;
+
+            case 3:
+                insuranceAmount = (int)(admitAmount * (insurancePercent / 100.0));
+                insuranceAppliedOn = "Admit Fee";
+                break;
+
+            case 4:
+                insuranceAmount = (int)(baseConsultationFee * (insurancePercent / 100.0));
+                insuranceAppliedOn = "Consultation Fee";
+                break;
+
+            default:
+                insuranceAmount = 0;
+                insuranceAppliedOn = "None";
+                break;
+        }
+
+        int afterInsurance = afterSenior - insuranceAmount;
+
+        int taxAmount = (int)(afterInsurance * 0.08);
+
+        finalAmount = afterInsurance + taxAmount;
+
+        Console.WriteLine("\n--- Billing Summary ---");
+        Console.WriteLine($"Bill Date & Time: {DateTime.Now:dd-MMM-yyyy hh:mm tt}");
+        Console.WriteLine($"Consultation Fee: {baseConsultationFee}");
+        Console.WriteLine($"Optional Services Total: {optionalServicesAmount}");
+        Console.WriteLine($"Admit Fee ({admitDays} days @ {admitFeePerDay}/day): {admitAmount}");
+        Console.WriteLine($"Total Amount (before discount): {totalAmount}");
+        Console.WriteLine($"Discount Applied: {discountAmount}");
+        Console.WriteLine($"Senior Citizen Discount (10%): {seniorDiscount}");
+        Console.WriteLine($"Insurance Deduction ({insurancePercent}% of {insuranceAppliedOn}): {insuranceAmount}");
+        Console.WriteLine($"Amount after Discount & Insurance: {afterInsurance}");
+        Console.WriteLine($"Tax (8%): {taxAmount}");
+        Console.WriteLine($"Final Amount Payable by Patient: {finalAmount}");
     }
 }

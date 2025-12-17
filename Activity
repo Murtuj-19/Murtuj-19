@@ -1,7 +1,146 @@
 using System;
 using System.Collections.Generic;
 
+class Patient
+{
+    public string Name { get; set; }
+    public List<int> SelectedServices { get; set; } = new List<int>();
+    public Stack<int> ServiceStack { get; set; } = new Stack<int>();
+    public double InsurancePercent { get; set; }
+    public int InsuranceChoice { get; set; }
+    public int AdmitDays { get; set; }
+    public bool IsSenior { get; set; }
+}
+
 class PatientBilling
+{
+    static void Main()
+    {
+        Dictionary<int, (string Name, int Cost)> availableServices =
+            new Dictionary<int, (string, int)>()
+        {
+            { 1, ("Lab Test", 600) },
+            { 2, ("X-Ray", 300) },
+            { 3, ("ECG", 1500) },
+            { 4, ("MRI", 2500) },
+            { 5, ("Ultrasound", 1200) },
+            { 6, ("Blood Work", 400) }
+        };
+
+        int baseConsultationFee = 500;
+        const int admitFeePerDay = 2000;
+
+        string[] insuranceCoverages =
+        {
+            "Full Amount",
+            "Optional Services (Tests/Scans) Only",
+            "Admit Fee Only",
+            "Consultation Fee Only"
+        };
+
+        Queue<Patient> patientQueue = new Queue<Patient>();
+        Stack<Patient> patientStack = new Stack<Patient>();
+
+        while (true)
+        {
+            Console.Write("\nEnter patient name (or 'done' to finish, 'undo' to remove last): ");
+            string name = Console.ReadLine()?.Trim();
+
+            if (string.IsNullOrWhiteSpace(name)) continue;
+            if (name.ToLower() == "done") break;
+
+            if (name.ToLower() == "undo")
+            {
+                if (patientStack.Count > 0)
+                {
+                    Patient removed = patientStack.Pop();
+                    Queue<Patient> tempQueue = new Queue<Patient>();
+                    while (patientQueue.Count > 0)
+                    {
+                        Patient p = patientQueue.Dequeue();
+                        if (p != removed) tempQueue.Enqueue(p);
+                    }
+                    patientQueue = tempQueue;
+                    Console.WriteLine($"Last patient entry undone: {removed.Name}");
+                }
+                else
+                {
+                    Console.WriteLine("No patient to undo.");
+                }
+                continue;
+            }
+
+            Console.WriteLine("\nAvailable Services:");
+            foreach (var service in availableServices)
+            {
+                Console.WriteLine($"{service.Key}. {service.Value.Name} - {service.Value.Cost}");
+            }
+
+            List<int> selectedServices = new List<int>();
+            Stack<int> serviceStack = new Stack<int>();
+
+            Console.WriteLine("\nEnter the numbers of optional services used (comma-separated).");
+            Console.WriteLine("Press Enter if none were used:");
+            string servicesInput = Console.ReadLine();
+
+            if (!string.IsNullOrWhiteSpace(servicesInput))
+            {
+                foreach (var s in servicesInput.Split(','))
+                {
+                    int serviceNumber;
+                    while (true)
+                    {
+                        if (int.TryParse(s.Trim(), out serviceNumber) &&
+                            availableServices.ContainsKey(serviceNumber))
+                        {
+                            selectedServices.Add(serviceNumber);
+                            serviceStack.Push(serviceNumber);
+                            break;
+                        }
+                        else
+                        {
+                            Console.Write($"Service number '{s.Trim()}' not recognized. Please enter a valid service number: ");
+                            string retry = Console.ReadLine();
+                            if (int.TryParse(retry.Trim(), out serviceNumber) &&
+                                availableServices.ContainsKey(serviceNumber))
+                            {
+                                selectedServices.Add(serviceNumber);
+                                serviceStack.Push(serviceNumber);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            double insurancePercent;
+            while (true)
+            {
+                Console.Write("Enter insurance coverage percentage (0–100): ");
+                string insuranceInput = Console.ReadLine();
+                if (double.TryParse(insuranceInput, out insurancePercent) &&
+                    insurancePercent >= 0 && insurancePercent <= 100)
+                {
+                    break;
+                }
+                Console.WriteLine("Invalid input. Please enter a number between 0 and 100.");
+            }
+
+            int insuranceChoice;
+            while (true)
+            {
+                Console.WriteLine("\nWhat does the insurance cover?");
+                for (int i = 0; i < insuranceCoverages.Length; i++)
+                {
+                    Console.WriteLine($"{i + 1}. {insuranceCoverages[i]}");
+                }
+                Console.Write("Enter your choice (1–4): ");
+                string insuranceChoiceInput = Console.ReadLine();
+                if (int.TryParse(insuranceChoiceInput, out insuranceChoice) &&
+                    insuranceChoice >= 1 && insuranceChoice <= insuranceCoverages.Length)
+                {
+                    break;
+Billing
 {
     static void Main()
     {

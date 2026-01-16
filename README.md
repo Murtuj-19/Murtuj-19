@@ -4,9 +4,9 @@
 <img align="right"alt="coding" width="400"  border="1" src="https://user-images.githubusercontent.com/74038190/235224431-e8c8c12e-6826-47f1-89fb-2ddad83b3abf.gif"
 <p align="left"> <img src="https://komarev.com/ghpvc/?username=murtuj-19&label=Profile%20views&color=0e75b6&style=flat" alt="murtuj-19" /> </p>
 
-- 🌱 I’m currently learning **BCA , Web Development , C# Developer**
+- 🌱 I’m a Associate Software Developer In HCA HealthCare
 
-- 📫 How to reach me **murtujshaikh45@gmail.com**
+- 📫 How to reach me **murtujshaikh9781@gmail.com**
 
 - ⚡ Fun fact **I am Funny 😅**
 
